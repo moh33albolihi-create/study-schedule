@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>جدولي الدراسي</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;700;800&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0d1119;
+    --bg-soft: #131826;
+    --surface: #171d2c;
+    --surface-2: #1e2536;
+    --line: #262e42;
+    --text: #eef1f8;
+    --text-dim: #93a0bd;
+    --text-faint: #5c6884;
+    --gold: #d9ac57;
+    --gold-dim: #8a7247;
+    --holiday: #3ea36f;
+    --exam: #d97a5a;
+
+    --c-coe326: #7c6bf0;
+    --c-cs214: #3fb6d1;
+    --c-coe361: #b8d64a;
+    --c-coe325: #e18fb0;
+    --c-math329: #6b7688;
+    --c-coe362: #5ec26b;
+    --c-cs383: #e0973c;
+    --busy: #3a7a52;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  html,body{margin:0; padding:0; background:var(--bg); color:var(--text); font-family:'Tajawal', sans-serif; min-height:100%;}
+  body{
+    background:
+      radial-gradient(1200px 500px at 85% -10%, rgba(124,107,240,0.14), transparent 60%),
+      radial-gradient(900px 400px at 10% 0%, rgba(217,172,87,0.08), transparent 55%),
+      var(--bg);
+    padding-bottom: 60px;
+  }
+  .wrap{max-width: 760px; margin:0 auto; padding: 18px 16px 0;}
+
+  /* header */
+  header{padding: 14px 2px 10px;}
+  .eyebrow{font-size:12px; letter-spacing:.5px; color:var(--gold); font-weight:700; display:flex; align-items:center; gap:6px;}
+  .eyebrow::before{content:""; width:6px; height:6px; border-radius:50%; background:var(--gold); display:inline-block;}
+  h1{font-family:'Cairo', sans-serif; font-weight:800; font-size: 26px; margin: 6px 0 2px; letter-spacing:.2px;}
+  .sub{color:var(--text-dim); font-size:13.5px; margin:0;}
+
+  /* progress strip */
+  .progress-row{display:flex; align-items:center; gap:10px; margin-top:14px;}
+  .progress-track{flex:1; height:6px; border-radius:4px; background:var(--surface-2); overflow:hidden; position:relative;}
+  .progress-fill{height:100%; border-radius:4px; background:linear-gradient(90deg, var(--gold-dim), var(--gold));}
+  .progress-label{font-size:11.5px; color:var(--text-faint); white-space:nowrap; font-weight:700;}
+
+  /* week nav */
+  .week-nav{
+    display:flex; align-items:center; justify-content:space-between;
+    background:var(--surface); border:1px solid var(--line); border-radius:16px;
+    padding: 12px 10px; margin-top:16px;
+  }
+  .wn-btn{
+    width:38px; height:38px; border-radius:11px; border:1px solid var(--line); background:var(--surface-2);
+    color:var(--text); font-size:18px; display:flex; align-items:center; justify-content:center;
+    cursor:pointer; user-select:none; transition: transform .12s ease, background .15s ease;
+  }
+  .wn-btn:active{transform:scale(.92); background: var(--gold-dim);}
+  .wn-mid{text-align:center; flex:1;}
+  .wn-title{font-family:'Cairo',sans-serif; font-weight:700; font-size:15.5px;}
+  .wn-range{font-size:11.5px; color:var(--text-dim); margin-top:2px; direction:ltr; display:inline-block;}
+  .wn-hijri{font-size:10.5px; color:var(--text-faint); margin-top:1px; direction:ltr; display:block;}
+  .wn-badge{
+    display:inline-block; margin-top:5px; font-size:10.5px; font-weight:700; padding:2px 10px; border-radius:20px;
+  }
+  .wn-badge.holiday{background:rgba(62,163,111,.16); color:var(--holiday); border:1px solid rgba(62,163,111,.35);}
+  .wn-badge.exam{background:rgba(217,122,90,.16); color:var(--exam); border:1px solid rgba(217,122,90,.35);}
+
+  /* day tabs */
+  .day-tabs{display:flex; gap:6px; margin-top:16px; overflow-x:auto; padding-bottom:2px;}
+  .day-tab{
+    flex:1; min-width:64px; text-align:center; padding:10px 4px 8px; border-radius:13px;
+    border:1px solid var(--line); background:var(--surface); cursor:pointer; position:relative;
+    transition: background .15s ease, border-color .15s ease;
+  }
+  .day-tab .dname{font-size:12.5px; font-weight:700; color:var(--text-dim);}
+  .day-tab .ddate{font-size:15px; font-weight:800; font-family:'Cairo',sans-serif; margin-top:3px; color:var(--text);}
+  .day-tab .dhijri{font-size:9.5px; color:var(--text-faint); margin-top:1px; direction:ltr;}
+  .day-tab .ddot{width:5px; height:5px; border-radius:50%; background:var(--gold); margin:5px auto 0; opacity:0;}
+  .day-tab.has-note .ddot{opacity:1;}
+  .day-tab.active{background:linear-gradient(180deg, rgba(217,172,87,.16), rgba(217,172,87,.05)); border-color:var(--gold-dim);}
+  .day-tab.active .dname{color:var(--gold);}
+  .day-tab.today .ddate{color:var(--gold);}
+  .day-tab.today::after{content:"اليوم"; position:absolute; top:-8px; left:50%; transform:translateX(-50%); font-size:9px; background:var(--gold); color:#211804; padding:1px 7px; border-radius:20px; font-weight:800;}
+  .day-tab.has-exam{border-color:rgba(217,122,90,.5);}
+  .day-tab.has-exam .ddate{color:var(--exam);}
+  .day-tab .dexam{font-size:9px; margin-top:2px;}
+
+  /* courses */
+  .section-title{font-family:'Cairo',sans-serif; font-size:14.5px; font-weight:700; color:var(--text-dim); margin: 22px 2px 10px; display:flex; align-items:center; gap:8px;}
+  .count-pill{background:var(--surface-2); color:var(--text-dim); font-size:11px; padding:1px 9px; border-radius:20px; font-weight:700;}
+
+  .courses{display:flex; flex-direction:column; gap:10px;}
+  .course-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:13px 14px;
+    display:flex; align-items:flex-start; gap:12px; position:relative; overflow:hidden;
+  }
+  .course-card::before{content:""; position:absolute; inset-inline-start:0; top:0; bottom:0; width:4px; background:var(--bar-color);}
+  .c-icon{
+    width:38px; height:38px; border-radius:10px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+    font-family:'Cairo',sans-serif; font-weight:800; font-size:13px; color:#0d1119;
+    background:var(--bar-color);
+  }
+  .c-info{flex:1; min-width:0;}
+  .c-top{display:flex; align-items:center; justify-content:space-between; gap:8px;}
+  .c-name{font-weight:700; font-size:14.5px; line-height:1.4;}
+  .c-time{font-size:12px; font-weight:800; color:var(--text); background:var(--surface-2); padding:3px 9px; border-radius:20px; white-space:nowrap;}
+  .c-meta{font-size:12px; color:var(--text-dim); margin-top:4px; display:flex; flex-wrap:wrap; gap:6px 10px;}
+  .c-meta span{display:flex; align-items:center; gap:4px;}
+  .live-badge{
+    display:inline-flex; align-items:center; gap:5px; font-size:10.5px; font-weight:800; color:#ff6b6b;
+    background:rgba(255,107,107,.12); border:1px solid rgba(255,107,107,.35); padding:2px 9px; border-radius:20px; margin-top:6px;
+  }
+  .live-badge::before{content:""; width:6px; height:6px; border-radius:50%; background:#ff6b6b; animation:pulse 1.2s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;} 50%{opacity:.3;}}
+
+  .empty-day{
+    text-align:center; padding: 34px 10px; color:var(--text-faint); background:var(--surface);
+    border:1px dashed var(--line); border-radius:14px; font-size:13.5px;
+  }
+  .empty-day .big{font-size:26px; display:block; margin-bottom:6px;}
+  .busy-day{
+    text-align:center; padding: 30px 14px; border-radius:14px; font-size:13.5px;
+    background:linear-gradient(180deg, rgba(58,122,82,.18), rgba(58,122,82,.05)); border:1px solid rgba(58,122,82,.4); color:#bfe3cd;
+  }
+  .busy-day .big{font-size:24px; display:block; margin-bottom:6px;}
+  .busy-day .small{color:var(--text-faint); font-size:11.5px; margin-top:4px;}
+
+  .exam-card{
+    background:linear-gradient(180deg, rgba(217,122,90,.14), rgba(217,122,90,.04));
+    border:1px solid rgba(217,122,90,.4); border-radius:14px; padding:14px;
+  }
+  .exam-tag{
+    display:inline-block; font-size:11px; font-weight:800; color:var(--exam);
+    background:rgba(217,122,90,.16); border:1px solid rgba(217,122,90,.35);
+    padding:2px 10px; border-radius:20px; margin-bottom:8px;
+  }
+  .exam-card .c-name{color:#f3d9cd;}
+
+  /* notes */
+  .notes-box{
+    margin-top: 22px; background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:14px;
+  }
+  .notes-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;}
+  .notes-head .t{font-family:'Cairo',sans-serif; font-weight:700; font-size:14px; display:flex; align-items:center; gap:7px;}
+  .save-state{font-size:11px; color:var(--text-faint); transition:opacity .3s ease;}
+  .save-state.saved{color:var(--holiday);}
+  textarea{
+    width:100%; min-height:110px; resize:vertical; background:var(--bg-soft); border:1px solid var(--line);
+    border-radius:11px; color:var(--text); font-family:'Tajawal',sans-serif; font-size:14px; padding:11px 12px;
+    outline:none; line-height:1.6;
+  }
+  textarea:focus{border-color:var(--gold-dim);}
+  textarea::placeholder{color:var(--text-faint);}
+
+  .loading{text-align:center; padding:60px 10px; color:var(--text-dim); font-size:13.5px;}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <div class="loading">...جاري تحميل الجدول</div>
+</div>
+
+<script>
+const WEEKS = [
+  {n:1, sun:"2026-08-23", mon:"2026-08-24", tue:"2026-08-25", wed:"2026-08-26", thu:"2026-08-27", fri:"2026-08-28", sat:"2026-08-29",
+   h:{sun:"3/10", mon:"3/11", tue:"3/12", wed:"3/13", thu:"3/14", fri:"3/15", sat:"3/16"}},
+  {n:2, sun:"2026-08-30", mon:"2026-08-31", tue:"2026-09-01", wed:"2026-09-02", thu:"2026-09-03", fri:"2026-09-04", sat:"2026-09-05",
+   h:{sun:"3/17", mon:"3/18", tue:"3/19", wed:"3/20", thu:"3/21", fri:"3/22", sat:"3/23"}},
+  {n:3, sun:"2026-09-06", mon:"2026-09-07", tue:"2026-09-08", wed:"2026-09-09", thu:"2026-09-10", fri:"2026-09-11", sat:"2026-09-12",
+   h:{sun:"3/24", mon:"3/25", tue:"3/26", wed:"3/27", thu:"3/28", fri:"3/29", sat:"4/1"}},
+  {n:4, sun:"2026-09-13", mon:"2026-09-14", tue:"2026-09-15", wed:"2026-09-16", thu:"2026-09-17", fri:"2026-09-18", sat:"2026-09-19",
+   h:{sun:"4/2", mon:"4/3", tue:"4/4", wed:"4/5", thu:"4/6", fri:"4/7", sat:"4/8"}},
+  {n:5, sun:"2026-09-20", mon:"2026-09-21", tue:"2026-09-22", wed:"2026-09-23", thu:"2026-09-24", fri:"2026-09-25", sat:"2026-09-26", holiday:true,
+   h:{sun:"4/9", mon:"4/10", tue:"4/11", wed:"4/12", thu:"4/13", fri:"4/14", sat:"4/15"}},
+  {n:6, sun:"2026-09-27", mon:"2026-09-28", tue:"2026-09-29", wed:"2026-09-30", thu:"2026-10-01", fri:"2026-10-02", sat:"2026-10-03",
+   h:{sun:"4/16", mon:"4/17", tue:"4/18", wed:"4/19", thu:"4/20", fri:"4/21", sat:"4/22"}},
+  {n:7, sun:"2026-10-04", mon:"2026-10-05", tue:"2026-10-06", wed:"2026-10-07", thu:"2026-10-08", fri:"2026-10-09", sat:"2026-10-10",
+   h:{sun:"4/23", mon:"4/24", tue:"4/25", wed:"4/26", thu:"4/27", fri:"4/28", sat:"4/29"}},
+  {n:8, sun:"2026-10-11", mon:"2026-10-12", tue:"2026-10-13", wed:"2026-10-14", thu:"2026-10-15", fri:"2026-10-16", sat:"2026-10-17",
+   h:{sun:"4/30", mon:"5/1", tue:"5/2", wed:"5/3", thu:"5/4", fri:"5/5", sat:"5/6"}},
+  {n:9, sun:"2026-10-18", mon:"2026-10-19", tue:"2026-10-20", wed:"2026-10-21", thu:"2026-10-22", fri:"2026-10-23", sat:"2026-10-24",
+   h:{sun:"5/7", mon:"5/8", tue:"5/9", wed:"5/10", thu:"5/11", fri:"5/12", sat:"5/13"}},
+  {n:10, sun:"2026-10-25", mon:"2026-10-26", tue:"2026-10-27", wed:"2026-10-28", thu:"2026-10-29", fri:"2026-10-30", sat:"2026-10-31",
+   h:{sun:"5/14", mon:"5/15", tue:"5/16", wed:"5/17", thu:"5/18", fri:"5/19", sat:"5/20"}},
+  {n:11, sun:"2026-11-01", mon:"2026-11-02", tue:"2026-11-03", wed:"2026-11-04", thu:"2026-11-05", fri:"2026-11-06", sat:"2026-11-07",
+   h:{sun:"5/21", mon:"5/22", tue:"5/23", wed:"5/24", thu:"5/25", fri:"5/26", sat:"5/27"}},
+  {n:12, sun:"2026-11-08", mon:"2026-11-09", tue:"2026-11-10", wed:"2026-11-11", thu:"2026-11-12", fri:"2026-11-13", sat:"2026-11-14",
+   h:{sun:"5/28", mon:"5/29", tue:"5/30", wed:"6/1", thu:"6/2", fri:"6/3", sat:"6/4"}},
+  {n:13, sun:"2026-11-15", mon:"2026-11-16", tue:"2026-11-17", wed:"2026-11-18", thu:"2026-11-19", fri:"2026-11-20", sat:"2026-11-21",
+   h:{sun:"6/5", mon:"6/6", tue:"6/7", wed:"6/8", thu:"6/9", fri:"6/10", sat:"6/11"}},
+  {n:14, sun:"2026-11-22", mon:"2026-11-23", tue:"2026-11-24", wed:"2026-11-25", thu:"2026-11-26", fri:"2026-11-27", sat:"2026-11-28", holiday:true,
+   h:{sun:"6/12", mon:"6/13", tue:"6/14", wed:"6/15", thu:"6/16", fri:"6/17", sat:"6/18"}},
+  {n:15, sun:"2026-11-29", mon:"2026-11-30", tue:"2026-12-01", wed:"2026-12-02", thu:"2026-12-03", fri:"2026-12-04", sat:"2026-12-05",
+   h:{sun:"6/19", mon:"6/20", tue:"6/21", wed:"6/22", thu:"6/23", fri:"6/24", sat:"6/25"}},
+  {n:16, sun:"2026-12-06", mon:"2026-12-07", tue:"2026-12-08", wed:"2026-12-09", thu:"2026-12-10", fri:"2026-12-11", sat:"2026-12-12",
+   h:{sun:"6/26", mon:"6/27", tue:"6/28", wed:"6/29", thu:"7/1", fri:"7/2", sat:"7/3"}},
+  {n:17, sun:"2026-12-13", mon:"2026-12-14", tue:"2026-12-15", wed:"2026-12-16", thu:"2026-12-17", fri:"2026-12-18", sat:"2026-12-19",
+   h:{sun:"7/4", mon:"7/5", tue:"7/6", wed:"7/7", thu:"7/8", fri:"7/9", sat:"7/10"}},
+  {n:18, sun:"2026-12-20", mon:"2026-12-21", tue:"2026-12-22", wed:"2026-12-23", thu:"2026-12-24", fri:"2026-12-25", sat:"2026-12-26", exam:true,
+   h:{sun:"7/11", mon:"7/12", tue:"7/13", wed:"7/14", thu:"7/15", fri:"7/16", sat:"7/17"}},
+  {n:19, sun:"2026-12-27", mon:"2026-12-28", tue:"2026-12-29", wed:"2026-12-30", thu:"2026-12-31", fri:"2027-01-01", sat:"2027-01-02", exam:true,
+   h:{sun:"7/18", mon:"7/19", tue:"7/20", wed:"7/21", thu:"7/22", fri:"7/23", sat:"7/24"}},
+  {n:20, sun:"2027-01-03", mon:"2027-01-04", tue:"2027-01-05", wed:"2027-01-06", thu:"2027-01-07", fri:"2027-01-08", sat:"2027-01-09", exam:true,
+   h:{sun:"7/25", mon:"7/26", tue:"7/27", wed:"7/28", thu:"7/29", fri:"7/30", sat:"8/1"}},
+];
+
+const DAY_KEYS = ["sun","mon","tue","wed","thu","fri","sat"];
+const DAY_NAMES = {sun:"الأحد", mon:"الاثنين", tue:"الثلاثاء", wed:"الأربعاء", thu:"الخميس", fri:"الجمعة", sat:"السبت"};
+function fmtHijri(md){ return "1448/"+md+"هـ"; }
+
+const COURSES = {
+  sun: [], // handled specially — full busy/work day
+  mon: [
+    {code:"COE 326", name:"معمل نظم المعالجات الدقيقة", section:"6666", type:"عملي", start:"08:00", end:"09:40", color:"var(--c-coe326)"},
+    {code:"CS 214",  name:"تراكيب البيانات", section:"6010", type:"نظري", start:"09:45", end:"11:25", color:"var(--c-cs214)"},
+    {code:"CS 214",  name:"تراكيب البيانات", section:"6012", type:"عملي", start:"13:15", end:"14:55", color:"var(--c-cs214)"},
+  ],
+  tue: [
+    {code:"COE 361",  name:"تحليل الإشارات والنظم", section:"6643", type:"نظري", start:"09:20", end:"10:35", color:"var(--c-coe361)"},
+    {code:"COE 325",  name:"نظم المعالجات الدقيقة", section:"6658", type:"نظري", start:"11:05", end:"12:20", color:"var(--c-coe325)"},
+    {code:"MATH 329", name:"بحوث العمليات", section:"6114", type:"نظري", start:"12:50", end:"14:05", color:"var(--c-math329)"},
+  ],
+  wed: [
+    {code:"COE 362", name:"معمل تحليل الإشارات والنظم", section:"6653", type:"عملي", start:"08:00", end:"09:40", color:"var(--c-coe362)"},
+    {code:"CS 383",  name:"هندسة البرمجيات", section:"6154", type:"نظري", start:"13:15", end:"14:30", color:"var(--c-cs383)"},
+  ],
+  thu: [
+    {code:"CS 383",   name:"هندسة البرمجيات", section:"6154", type:"نظري", start:"08:00", end:"09:15", color:"var(--c-cs383)"},
+    {code:"COE 361",  name:"تحليل الإشارات والنظم", section:"6643", type:"نظري", start:"09:20", end:"10:35", color:"var(--c-coe361)"},
+    {code:"COE 325",  name:"نظم المعالجات الدقيقة", section:"6658", type:"نظري", start:"10:40", end:"11:55", color:"var(--c-coe325)"},
+    {code:"MATH 329", name:"بحوث العمليات", section:"6114", type:"نظري", start:"12:25", end:"13:40", color:"var(--c-math329)"},
+  ],
+  fri: [],
+  sat: [],
+};
+
+function todayStr(){
+  const d = new Date();
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+function fmtDate(iso){
+  const [y,m,d] = iso.split("-").map(Number);
+  return new Intl.DateTimeFormat("ar-SA-u-nu-latn",{day:"numeric", month:"short"}).format(new Date(y,m-1,d));
+}
+function findCurrentWeekIndex(){
+  const t = todayStr();
+  for(let i=0;i<WEEKS.length;i++){
+    if(t <= WEEKS[i].thu) return i;
+  }
+  return WEEKS.length-1;
+}
+
+let weekIdx = findCurrentWeekIndex();
+let activeDay = (function(){
+  const t = todayStr();
+  const w = WEEKS[weekIdx];
+  for(const k of DAY_KEYS){ if(w[k] === t) return k; }
+  return "sun";
+})();
+
+const notesCache = {};
+let saveTimer = null;
+
+async function loadNoteFlags(week){
+  // Determine which days in this week already have notes, for the dot indicator
+  const flags = {};
+  DAY_KEYS.forEach(k=>{
+    const key = "note:"+week[k];
+    if(notesCache[key] === undefined){
+      let val = "";
+      try{ val = localStorage.getItem(key) || ""; }catch(e){ val = ""; }
+      notesCache[key] = val;
+    }
+    flags[k] = !!(notesCache[key] && notesCache[key].trim());
+  });
+  return flags;
+}
+
+const FINALS = [
+  {date:"2026-12-23", code:"COE 362", name:"معمل تحليل الإشارات والنظم", section:"6653", type:"عملي", start:"08:00", end:"10:00", room:"مقر الجامعة الرئيس طلاب", instructor:"حمد ناصر حمد البداح"},
+  {date:"2026-12-24", code:"COE 326", name:"معمل نظم المعالجات الدقيقة", section:"6666", type:"عملي", start:"08:00", end:"10:00", room:"مقر الجامعة الرئيس طلاب", instructor:"البراء رميان محمد الرميان"},
+  {date:"2026-12-27", code:"CS 383",  name:"هندسة البرمجيات", section:"6154", type:"نظري", start:"13:00", end:"15:00", room:"مقر الجامعة الرئيس طلاب", instructor:"لم يُحدد من الكلية"},
+  {date:"2026-12-29", code:"MATH 329", name:"بحوث العمليات", section:"6114", type:"نظري", start:"08:00", end:"10:00", room:"مقر الجامعة الرئيس طلاب", instructor:"لم يُحدد من الكلية"},
+  {date:"2026-12-31", code:"COE 361", name:"تحليل الإشارات والنظم", section:"6643", type:"نظري", start:"08:00", end:"10:00", room:"مقر الجامعة الرئيس طلاب", instructor:"حمد ناصر حمد البداح"},
+  {date:"2027-01-03", code:"CS 214",  name:"تراكيب البيانات", section:"6010", type:"نظري", start:"08:00", end:"10:00", room:"مقر الجامعة الرئيس طلاب", instructor:"محمد أويس محمد أسلم"},
+  {date:"2027-01-05", code:"COE 325", name:"نظم المعالجات الدقيقة", section:"6658", type:"نظري", start:"13:00", end:"15:00", room:"مقر الجامعة الرئيس طلاب", instructor:"لم يُحدد من الكلية"},
+];
+function nowHM(){
+  const d = new Date();
+  return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
+}
+function fmtTime12(hm){
+  let [h,m] = hm.split(":").map(Number);
+  const period = h < 12 ? "ص" : "م";
+  let h12 = h % 12;
+  if(h12 === 0) h12 = 12;
+  return h12 + ":" + String(m).padStart(2,"0") + " " + period;
+}
+function isLive(dateIso, start, end){
+  if(dateIso !== todayStr()) return false;
+  const n = nowHM();
+  return n >= start && n <= end;
+}
+function examCardHtml(f){
+  return `
+    <div class="exam-card">
+      <div class="exam-tag">📝 اختبار نهائي</div>
+      <div class="c-top">
+        <div class="c-name">${f.name}</div>
+        <div class="c-time">${fmtTime12(f.start)} – ${fmtTime12(f.end)}</div>
+      </div>
+      <div class="c-meta">
+        <span>📘 ${f.code}</span>
+        <span>🏷️ شعبة ${f.section}</span>
+        <span>${f.type === 'عملي' ? '🔧' : '📖'} ${f.type}</span>
+      </div>
+      <div class="c-meta" style="margin-top:6px;">
+        <span>📍 ${f.room}</span>
+        <span>👤 ${f.instructor}</span>
+      </div>
+    </div>`;
+}
+
+function renderDayBody(w){
+  const dateIso = w[activeDay];
+  const examsToday = FINALS.filter(f=>f.date === dateIso);
+
+  if(examsToday.length){
+    return examsToday.map(examCardHtml).join("");
+  }
+
+  if(activeDay === 'sun'){
+    return `
+      <div class="busy-day">
+        <span class="big">🔧</span>
+        مشغول طوال اليوم
+        <div class="small">دوام العمل — لا محاضرات</div>
+      </div>`;
+  }
+
+  if(w.exam){
+    return `<div class="empty-day"><span class="big">🎉</span>ما عندك اختبار اليوم</div>`;
+  }
+
+  const list = COURSES[activeDay];
+  if(!list.length){
+    return `<div class="empty-day"><span class="big">☕</span>ما عندك محاضرات — يوم حر</div>`;
+  }
+  return list.map(c=>{
+    const live = isLive(dateIso, c.start, c.end);
+    return `
+      <div class="course-card" style="--bar-color:${c.color}">
+        <div class="c-icon">${c.code.replace(/\D/g,'').slice(-3) || c.code.slice(0,2)}</div>
+        <div class="c-info">
+          <div class="c-top">
+            <div class="c-name">${c.name}</div>
+            <div class="c-time">${fmtTime12(c.start)} – ${fmtTime12(c.end)}</div>
+          </div>
+          <div class="c-meta">
+            <span>📘 ${c.code}</span>
+            <span>🏷️ شعبة ${c.section}</span>
+            <span>${c.type === 'عملي' ? '🔧' : '📖'} ${c.type}</span>
+          </div>
+          ${live ? `<div class="live-badge">جارية الآن</div>` : ``}
+        </div>
+      </div>`;
+  }).join("");
+}
+
+function render(){
+  const app = document.getElementById("app");
+  const w = WEEKS[weekIdx];
+  const t = todayStr();
+  const progressPct = Math.round((weekIdx+1)/WEEKS.length*100);
+
+  let badge = "";
+  if(w.holiday) badge = `<div class="wn-badge holiday">إجازة</div>`;
+  if(w.exam) badge = `<div class="wn-badge exam">أسبوع اختبارات</div>`;
+
+  app.innerHTML = `
+    <header>
+      <div class="eyebrow">الفصل الدراسي الأول &nbsp;·&nbsp; 481</div>
+      <h1>جدولي الدراسي</h1>
+      <p class="sub">هندسة الحاسب — تابع محاضراتك ودوّن ملاحظاتك يوم بيوم</p>
+      <div class="progress-row">
+        <div class="progress-track"><div class="progress-fill" style="width:${progressPct}%"></div></div>
+        <div class="progress-label">الأسبوع ${w.n} من ${WEEKS.length}</div>
+      </div>
+    </header>
+
+    <div class="week-nav">
+      <div class="wn-btn" id="prevWeek">‹</div>
+      <div class="wn-mid">
+        <div class="wn-title">الأسبوع ${w.n}</div>
+        <div class="wn-range">${fmtDate(w.sun)} – ${fmtDate(w.thu)}</div>
+        <div class="wn-hijri">${fmtHijri(w.h.sun)} – ${fmtHijri(w.h.thu)}</div>
+        ${badge}
+      </div>
+      <div class="wn-btn" id="nextWeek">›</div>
+    </div>
+
+    <div class="day-tabs" id="dayTabs">
+      ${DAY_KEYS.map(k=>`
+        <div class="day-tab ${k===activeDay?'active':''} ${w[k]===t?'today':''} ${FINALS.some(f=>f.date===w[k])?'has-exam':''}" data-day="${k}">
+          <div class="dname">${DAY_NAMES[k]}</div>
+          <div class="ddate">${fmtDate(w[k])}</div>
+          <div class="dhijri">${fmtHijri(w.h[k])}</div>
+          ${FINALS.some(f=>f.date===w[k]) ? `<div class="dexam">📝</div>` : `<div class="ddot"></div>`}
+        </div>
+      `).join("")}
+    </div>
+
+    <div class="section-title">
+      ${FINALS.some(f=>f.date===w[activeDay]) ? 'اختبار' : 'محاضرات'} ${DAY_NAMES[activeDay]}
+      <span class="count-pill">${activeDay==='sun' ? '—' : (FINALS.some(f=>f.date===w[activeDay]) ? FINALS.filter(f=>f.date===w[activeDay]).length : COURSES[activeDay].length)}</span>
+    </div>
+    <div class="courses" id="coursesBox">
+      ${renderDayBody(w)}
+    </div>
+
+    <div class="notes-box">
+      <div class="notes-head">
+        <div class="t">📝 ملاحظات ${DAY_NAMES[activeDay]}</div>
+        <div class="save-state" id="saveState"></div>
+      </div>
+      <textarea id="noteArea" placeholder="اكتب ملاحظاتك، واجبات، أو تذكيرات لهذا اليوم...">${notesCache["note:"+w[activeDay]] ?? ""}</textarea>
+    </div>
+  `;
+
+  document.getElementById("prevWeek").onclick = ()=>{
+    if(weekIdx>0){ weekIdx--; syncActiveDayFallback(); refreshAndRender(); }
+  };
+  document.getElementById("nextWeek").onclick = ()=>{
+    if(weekIdx<WEEKS.length-1){ weekIdx++; syncActiveDayFallback(); refreshAndRender(); }
+  };
+  document.querySelectorAll(".day-tab").forEach(el=>{
+    el.onclick = ()=>{ activeDay = el.dataset.day; refreshAndRender(); };
+  });
+
+  const noteArea = document.getElementById("noteArea");
+  const saveState = document.getElementById("saveState");
+  noteArea.addEventListener("input", ()=>{
+    saveState.textContent = "...جارٍ الحفظ";
+    saveState.classList.remove("saved");
+    clearTimeout(saveTimer);
+    const dateKey = "note:"+WEEKS[weekIdx][activeDay];
+    const val = noteArea.value;
+    saveTimer = setTimeout(()=>{
+      try{
+        localStorage.setItem(dateKey, val);
+        notesCache[dateKey] = val;
+        saveState.textContent = "تم الحفظ ✓";
+        saveState.classList.add("saved");
+        markDot();
+      }catch(e){
+        saveState.textContent = "تعذّر الحفظ";
+      }
+    }, 400);
+  });
+
+  markDot();
+}
+
+function markDot(){
+  const w = WEEKS[weekIdx];
+  document.querySelectorAll(".day-tab").forEach(el=>{
+    const k = el.dataset.day;
+    const has = !!(notesCache["note:"+w[k]] && notesCache["note:"+w[k]].trim());
+    el.classList.toggle("has-note", has);
+  });
+}
+
+function syncActiveDayFallback(){
+  // keep same weekday selected when switching weeks; sun default already fine since keys match
+}
+
+async function refreshAndRender(){
+  render();
+  await loadNoteFlags(WEEKS[weekIdx]);
+  render();
+}
+
+refreshAndRender();
+setInterval(render, 60000);
+</script>
+</body>
+</html>
