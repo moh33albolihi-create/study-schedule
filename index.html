@@ -225,6 +225,21 @@
     color:#e07a7a; border-radius:11px; padding:10px; font-size:12.5px; font-weight:700; cursor:pointer;
     font-family:'Tajawal',sans-serif;
   }
+
+  /* assignments strip */
+  .assign-strip{margin-top:14px; display:flex; flex-direction:column; gap:8px;}
+  .assign-strip-title{font-family:'Cairo',sans-serif; font-size:12.5px; font-weight:700; color:var(--text-dim);}
+  .assign-chip{background:var(--surface); border:1px solid var(--line); border-radius:13px; padding:12px 13px;}
+  .ac-top{display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:4px;}
+  .ac-type{font-size:11.5px; font-weight:700; color:var(--text-dim); white-space:nowrap;}
+  .ac-count{font-size:11px; font-weight:800; padding:2px 9px; border-radius:20px; background:rgba(217,172,87,.14); color:var(--gold); border:1px solid rgba(217,172,87,.3); white-space:nowrap;}
+  .ac-count.overdue{background:rgba(217,90,90,.14); color:#e07a7a; border-color:rgba(217,90,90,.35);}
+  .ac-title{font-size:14px; font-weight:700; margin-top:2px;}
+  .ac-due{font-size:11.5px; color:var(--text-faint); margin-top:3px;}
+  .ac-actions{display:flex; gap:8px; margin-top:9px;}
+  .ac-btn{flex:1; text-align:center; font-size:11.5px; font-weight:700; padding:7px; border-radius:9px; background:var(--surface-2); border:1px solid var(--line); color:var(--text-dim); cursor:pointer; text-decoration:none; font-family:'Tajawal',sans-serif;}
+  .ac-btn:active{background:var(--gold-dim); color:#fff;}
+  .assign-more{text-align:center; font-size:11.5px; color:var(--text-faint); padding:2px;}
 </style>
 </head>
 <body>
@@ -376,6 +391,115 @@ function saveFinals(){ try{ localStorage.setItem('myFinals', JSON.stringify(FINA
 
 let COURSES = loadCourses();
 let FINALS = loadFinals();
+
+const DEFAULT_ASSIGNMENTS = [];
+function ensureAssignmentIds(arr){ arr.forEach(a=>{ if(!a.id) a.id = genId(); }); return arr; }
+function loadAssignments(){
+  try{
+    const raw = localStorage.getItem('myAssignments');
+    if(raw) return ensureAssignmentIds(JSON.parse(raw));
+  }catch(e){}
+  const seeded = ensureAssignmentIds(JSON.parse(JSON.stringify(DEFAULT_ASSIGNMENTS)));
+  try{ localStorage.setItem('myAssignments', JSON.stringify(seeded)); }catch(e){}
+  return seeded;
+}
+function saveAssignments(){ try{ localStorage.setItem('myAssignments', JSON.stringify(ASSIGNMENTS)); }catch(e){} }
+let ASSIGNMENTS = loadAssignments();
+
+function pad2(n){ return String(n).padStart(2,"0"); }
+
+function assignDueDate(a){
+  const [y,m,d] = a.dueDate.split("-").map(Number);
+  const [hh,mm] = (a.dueTime || "23:59").split(":").map(Number);
+  return new Date(y, m-1, d, hh, mm);
+}
+
+function countdownText(dueDT){
+  const now = new Date();
+  const diffMs = dueDT - now;
+  const overdue = diffMs < 0;
+  const abs = Math.abs(diffMs);
+  const days = Math.floor(abs/86400000);
+  const hours = Math.floor((abs%86400000)/3600000);
+  let txt;
+  if(days >= 1) txt = days + " يوم";
+  else if(hours >= 1) txt = hours + " ساعة";
+  else txt = "أقل من ساعة";
+  return overdue ? ("متأخر " + txt) : ("باقي " + txt);
+}
+
+function googleCalUrl(a){
+  const [y,m,d] = a.dueDate.split("-").map(Number);
+  const [hh,mm] = (a.dueTime || "23:59").split(":").map(Number);
+  const start = y + pad2(m) + pad2(d) + "T" + pad2(hh) + pad2(mm) + "00";
+  const endDate = new Date(y, m-1, d, hh, mm);
+  endDate.setHours(endDate.getHours()+1);
+  const end = endDate.getFullYear() + pad2(endDate.getMonth()+1) + pad2(endDate.getDate()) + "T" + pad2(endDate.getHours()) + pad2(endDate.getMinutes()) + "00";
+  const text = encodeURIComponent(`${a.type}: ${a.title}${a.code ? " ("+a.code+")" : ""}`);
+  const details = encodeURIComponent(a.notes || "");
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&dates=${start}/${end}&details=${details}&ctz=Asia/Riyadh`;
+}
+
+function downloadICS(a){
+  if(!a) return;
+  const [y,m,d] = a.dueDate.split("-").map(Number);
+  const [hh,mm] = (a.dueTime || "23:59").split(":").map(Number);
+  const dt = y + pad2(m) + pad2(d) + "T" + pad2(hh) + pad2(mm) + "00";
+  const endDate = new Date(y, m-1, d, hh, mm);
+  endDate.setHours(endDate.getHours()+1);
+  const dtEnd = endDate.getFullYear() + pad2(endDate.getMonth()+1) + pad2(endDate.getDate()) + "T" + pad2(endDate.getHours()) + pad2(endDate.getMinutes()) + "00";
+  const ics = [
+    "BEGIN:VCALENDAR","VERSION:2.0","BEGIN:VEVENT",
+    "UID:" + a.id + "@study-schedule",
+    "DTSTART:" + dt,
+    "DTEND:" + dtEnd,
+    "SUMMARY:" + a.type + ": " + a.title + (a.code ? " ("+a.code+")" : ""),
+    "DESCRIPTION:" + (a.notes || "").replace(/\n/g,"\\n"),
+    "END:VEVENT","END:VCALENDAR"
+  ].join("\r\n");
+  const blob = new Blob([ics], {type:"text/calendar;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = (a.title || "assignment") + ".ics";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+function assignChipHtml(a){
+  const dueDT = assignDueDate(a);
+  const icon = a.type === 'مشروع' ? '🧩' : '📝';
+  return `
+    <div class="assign-chip">
+      <div class="ac-top">
+        <span class="ac-type">${icon} ${a.type}${a.code ? ' · '+a.code : ''}</span>
+        <span class="ac-count ${dueDT < new Date() ? 'overdue' : ''}">${countdownText(dueDT)}</span>
+      </div>
+      <div class="ac-title">${a.title}</div>
+      <div class="ac-due">آخر موعد: ${fmtDate(a.dueDate)}${a.dueTime ? ' · '+fmtTime12(a.dueTime) : ''}</div>
+      <div class="ac-actions">
+        <a class="ac-btn" href="${googleCalUrl(a)}" target="_blank" rel="noopener">📅 قوقل كالندر</a>
+        <div class="ac-btn" data-ics="${a.id}">⬇️ تحميل ics</div>
+      </div>
+    </div>`;
+}
+
+function upcomingAssignmentsHtml(){
+  if(!ASSIGNMENTS.length) return '';
+  const now = new Date();
+  const withDue = ASSIGNMENTS.map(a=>({a, dueDT: assignDueDate(a)}));
+  const upcoming = withDue.filter(x=>x.dueDT >= now).sort((x,y)=>x.dueDT-y.dueDT);
+  if(!upcoming.length) return '';
+  const show = upcoming.slice(0,2);
+  return `
+    <div class="assign-strip">
+      <div class="assign-strip-title">📌 قريبًا</div>
+      ${show.map(x=>assignChipHtml(x.a)).join('')}
+      ${upcoming.length > 2 ? `<div class="assign-more">و ${upcoming.length-2} كمان — شوفها بلوحة "عدّل جدولك"</div>` : ''}
+    </div>`;
+}
 function nowHM(){
   const d = new Date();
   return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
@@ -455,8 +579,9 @@ function renderManagePanel(){
       <div class="manage-tabs">
         <div class="mtab ${manageTab==='courses'?'active':''}" data-mtab="courses">📚 المحاضرات</div>
         <div class="mtab ${manageTab==='finals'?'active':''}" data-mtab="finals">📝 الاختبارات</div>
+        <div class="mtab ${manageTab==='assignments'?'active':''}" data-mtab="assignments">📌 الواجبات</div>
       </div>
-      ${manageTab==='courses' ? renderCoursesManage() : renderFinalsManage()}
+      ${manageTab==='courses' ? renderCoursesManage() : manageTab==='finals' ? renderFinalsManage() : renderAssignmentsManage()}
       <button class="reset-btn" id="resetBtn">🗑️ حذف كل الجدول والبدء من جديد</button>
     </div>`;
 }
@@ -540,6 +665,39 @@ function renderFinalsManage(){
       <div class="field"><label>القاعة</label><input id="xRoom" placeholder="مقر الجامعة الرئيس طلاب"></div>
       <div class="field"><label>المحاضر</label><input id="xInstructor" placeholder="اسم الدكتور (اختياري)"></div>
       <button class="submit-btn" id="addFinalBtn">+ إضافة الاختبار</button>
+    </div>`;
+}
+
+function renderAssignmentsManage(){
+  const rows = ASSIGNMENTS.slice().sort((a,b)=>(a.dueDate+(a.dueTime||"")).localeCompare(b.dueDate+(b.dueTime||""))).map(a=>`
+    <div class="manage-row">
+      <div class="dot" style="background:${a.type==='مشروع' ? '#8f7fe8' : '#e0973c'}"></div>
+      <div class="info">
+        <div class="n">${a.title}${a.code ? ' — '+a.code : ''}</div>
+        <div class="d">${a.type} · ${fmtDate(a.dueDate)}${a.dueTime ? ' '+fmtTime12(a.dueTime) : ''}</div>
+      </div>
+      <div class="del" data-del-assign="${a.id}">✕</div>
+    </div>`).join("");
+  return `
+    <div class="manage-list">
+      ${rows || `<div class="manage-empty">ما فيه واجبات أو مشاريع مضافة بعد</div>`}
+    </div>
+    <div class="form-title">إضافة واجب / مشروع</div>
+    <div class="form-grid">
+      <div class="form-row">
+        <div class="field">
+          <label>النوع</label>
+          <select id="aType"><option value="واجب">واجب</option><option value="مشروع">مشروع</option></select>
+        </div>
+        <div class="field"><label>رمز المقرر (اختياري)</label><input id="aCode" placeholder="COE 361"></div>
+      </div>
+      <div class="field"><label>العنوان</label><input id="aTitle" placeholder="واجب الفصل الثالث"></div>
+      <div class="form-row">
+        <div class="field"><label>تاريخ التسليم</label><input type="date" id="aDate"></div>
+        <div class="field"><label>الوقت (اختياري)</label><input type="time" id="aTime"></div>
+      </div>
+      <div class="field"><label>ملاحظات (اختياري)</label><input id="aNotes" placeholder="تفاصيل إضافية"></div>
+      <button class="submit-btn" id="addAssignBtn">+ إضافة</button>
     </div>`;
 }
 
@@ -639,10 +797,40 @@ function wireManagePanel(){
       if(confirm("متأكد إنك تبي تحذف كل المحاضرات والاختبارات وتبدأ من جديد؟")){
         COURSES = {sun:[],mon:[],tue:[],wed:[],thu:[],fri:[],sat:[]};
         FINALS = [];
+        ASSIGNMENTS = [];
         saveCourses();
         saveFinals();
+        saveAssignments();
         render();
       }
+    };
+  }
+
+  document.querySelectorAll("[data-del-assign]").forEach(el=>{
+    el.onclick = ()=>{
+      const id = el.dataset.delAssign;
+      ASSIGNMENTS = ASSIGNMENTS.filter(a=>a.id!==id);
+      saveAssignments();
+      render();
+    };
+  });
+
+  const addAssignBtn = document.getElementById("addAssignBtn");
+  if(addAssignBtn){
+    addAssignBtn.onclick = ()=>{
+      const type = document.getElementById("aType").value;
+      const code = document.getElementById("aCode").value.trim();
+      const title = document.getElementById("aTitle").value.trim();
+      const dueDate = document.getElementById("aDate").value;
+      const dueTime = document.getElementById("aTime").value;
+      const notes = document.getElementById("aNotes").value.trim();
+      if(!title || !dueDate){
+        alert("لازم تكتب العنوان وتاريخ التسليم على الأقل");
+        return;
+      }
+      ASSIGNMENTS.push({id:genId(), type, code, title, dueDate, dueTime, notes});
+      saveAssignments();
+      render();
     };
   }
 }
@@ -678,6 +866,8 @@ function render(){
       </div>
       <div class="wn-btn" id="nextWeek">›</div>
     </div>
+
+    ${upcomingAssignmentsHtml()}
 
     <div class="day-tabs" id="dayTabs">
       ${DAY_KEYS.map(k=>`
@@ -743,6 +933,12 @@ function render(){
 
   markDot();
   wireManagePanel();
+  document.querySelectorAll("[data-ics]").forEach(el=>{
+    el.onclick = ()=>{
+      const a = ASSIGNMENTS.find(x=>x.id === el.dataset.ics);
+      downloadICS(a);
+    };
+  });
 }
 
 function markDot(){
