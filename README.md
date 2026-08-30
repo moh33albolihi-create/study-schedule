@@ -1,6 +1,5 @@
-# 📅 جدولي الدراسي — Study Schedule
-
-موقع ويب تفاعلي لعرض وإدارة الجدول الدراسي الأسبوعي، مبني بالكامل بـ **HTML, CSS, JavaScript** بدون أي framework أو مكتبات خارجية، ومنشور مباشرة عبر GitHub Pages.
+# 📅 جدولي الدراسي — Study Schedlue
+موقع ويب تفاعلي لعرض وإدارة الجدول الدراسي الأسبوعي,
 
 ### 🔗 جرّبه مباشرة
 **https://moh33albolihi-create.github.io/study-schedule/**
